@@ -7,16 +7,15 @@ extern "C"
 #include <stdio.h>
 #include "IOCPMessenger.h"
 
-IOCPMessenger::IOCPMessenger(Stream &ccomms, const char *fld_separators, const char cmd_separator, const char *identifier) {
-    init(ccomms, fld_separators, cmd_separator, identifier);
+IOCPMessenger::IOCPMessenger(Stream &ccomms, const char *fld_separators, const char *identifier) {
+    init(ccomms, fld_separators, identifier);
 }
 
-void IOCPMessenger::init(Stream &ccomms, const char *fld_separators, const char cmd_separator, const char *identifier) {
+void IOCPMessenger::init(Stream &ccomms, const char *fld_separators, const char *identifier) {
     default_callback = NULL;
     comms = &ccomms;
     print_newlines = true;
     field_separators = fld_separators;
-    command_separator = cmd_separator;
     bufferLength = MESSENGERBUFFERSIZE;
     bufferLastIndex = MESSENGERBUFFERSIZE - 1;
     iocp_identifier = identifier;
@@ -72,7 +71,7 @@ uint8_t IOCPMessenger::processLine(int serialByte) {
 
     if (true) {
 
-        if (serialChar == command_separator) {
+        if (serialChar == 0x0A) {
             commandBuffer[bufferIndex] = '\0';
 
             if (bufferIndex > 0) {

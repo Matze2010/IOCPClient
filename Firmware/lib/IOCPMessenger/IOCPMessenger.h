@@ -50,7 +50,6 @@ private:
     char prevChar;                           // Previous char (needed for unescaping)
     Stream *comms;                           // Serial data stream
 
-    char command_separator; // Character indicating end of command (default: ';')
     const char *field_separators;   // Character indicating end of argument (default: ',')
     const char *iocp_identifier;
 
@@ -58,7 +57,7 @@ private:
     messengerCallbackFunction default_callback;                 // default callback function
     messengerCallbackRegistration callbackList[MAXCALLBACKS];   // list of attached callback functions
 
-    void init(Stream &comms, const char *fld_separators, const char cmd_separator, const char *identifier);
+    void init(Stream &comms, const char *fld_separators, const char *identifier);
     void reset();
 
     inline uint8_t processLine(int serialByte) __attribute__((always_inline));
@@ -67,7 +66,7 @@ private:
 
 public:
 
-    explicit IOCPMessenger(Stream &comms, const char *fld_separators = ":\r", const char cmd_separator = 0x0A, const char *identifier = "Arn.");
+    explicit IOCPMessenger(Stream &comms, const char *fld_separators = ":\r", const char *identifier = "Arn.");
 
     void feedinSerialData();
     bool next();

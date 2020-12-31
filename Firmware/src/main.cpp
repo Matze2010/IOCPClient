@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <IOCPMessenger.h>
+#include "IOCP.h"
 
 #define DEBUG
 
@@ -9,14 +10,14 @@ typedef struct updatedata_t {
 } UpdateEntry;
 UpdateEntry *updateEntries;
 
-IOCPMessenger iocpMessenger = IOCPMessenger(Serial);
+IOCPMessenger iocpMessenger = IOCPMessenger(Serial, ":\r", IOCP_IDENTIFIER);
 
 // Function Prototypes
 void updateConnectedDevices();
 
 void OnKeepAlive()
 {
-  iocpMessenger.sendCmdStart("Vivo");
+  iocpMessenger.sendCmdStart(IOCP_KEEPALIVE_COMMAND);
   iocpMessenger.sendCmdEnd();
 }
 
@@ -31,8 +32,8 @@ void OnUpdate() {
     char *copy = (char *)malloc(sizeof(data));
     strcpy(copy, data);
 
-    char *positionStr = strtok_r(copy, "=", &p);
-    char *valueStr = strtok_r(NULL, "=", &p);
+    char *positionStr = strtok_r(copy, IOCP_VALUE_SEPARATOR, &p);
+    char *valueStr = strtok_r(NULL, IOCP_VALUE_SEPARATOR, &p);
 
     if (positionStr == NULL || valueStr == NULL) {
       free(copy);
@@ -62,7 +63,7 @@ void OnUpdate() {
     #ifdef DEBUG
     char result[60];
     snprintf(result, sizeof(result), "Update %ld with %ld",position, value);
-    iocpMessenger.sendCmd("Stat", result);
+    iocpMessenger.sendCmd(IOCP_STATUS_COMMAND, result);
     #endif 
   }
 
@@ -77,11 +78,11 @@ void attachCommandCallbacks() {
   
   // Attach callback methods
   iocpMessenger.attach(OnUnknownCommand);
-  iocpMessenger.attach("Vivo", OnKeepAlive);
-  iocpMessenger.attach("Resp", OnUpdate);
+  iocpMessenger.attach(IOCP_KEEPALIVE_COMMAND, OnKeepAlive);
+  iocpMessenger.attach(IOCP_UPDATE_COMMAND, OnUpdate);
 
 #ifdef DEBUG
-  iocpMessenger.sendCmd("Stat", F("Attached callbacks"));
+  iocpMessenger.sendCmd(IOCP_STATUS_COMMAND, F("Attached callbacks"));
 #endif
 }
 

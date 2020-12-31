@@ -48,15 +48,15 @@ enum IOCPMessageAction {
         let newCommand: IOCPMessageAction
         let cleanData = rawData.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        if !cleanData.hasPrefix(IOCP_HEADER) {
+        if !cleanData.hasPrefix(IOCP_IDENTIFIER) {
             NSLog("Not valid IOCP-Protocol: \(cleanData)")
             return IOCPMessageAction.Unknown
         }
 
         switch cleanData {
 
-        case let command where command.hasPrefix(IOCP_HEADER + IOCP_COMMAND_SEPARATOR + IOCP_REGISTRATION_COMMAND):
-            let parts = command.components(separatedBy: IOCP_CONTENT_SEPARATOR).dropFirst()
+        case let command where command.hasPrefix(IOCP_IDENTIFIER + IOCP_REGISTRATION_COMMAND):
+            let parts = command.components(separatedBy: IOCP_ARGUMENT_SEPARATOR).dropFirst()
             let names = Set(parts.compactMap { IOCPPositionName($0) })
             if names.count > 0 {
                 newCommand = IOCPMessageAction.Registration(names)
@@ -64,8 +64,8 @@ enum IOCPMessageAction {
                 newCommand = IOCPMessageAction.Invalid
             }
 
-        case let command where command.hasPrefix(IOCP_HEADER + IOCP_COMMAND_SEPARATOR + IOCP_UPDATE_COMMAND):
-            let parts = command.components(separatedBy: IOCP_CONTENT_SEPARATOR).dropFirst()
+        case let command where command.hasPrefix(IOCP_IDENTIFIER + IOCP_UPDATE_COMMAND):
+            let parts = command.components(separatedBy: IOCP_ARGUMENT_SEPARATOR).dropFirst()
             let positions = parts.compactMap { IOCPPosition.parsing($0) }
             if positions.count > 0 {
                 newCommand = IOCPMessageAction.Update(positions)
@@ -73,10 +73,10 @@ enum IOCPMessageAction {
                 newCommand = IOCPMessageAction.Invalid
             }
 
-        case let command where command.hasPrefix(IOCP_HEADER + IOCP_COMMAND_SEPARATOR + IOCP_KEEPALIVE_COMMAND):
+        case let command where command.hasPrefix(IOCP_IDENTIFIER + IOCP_KEEPALIVE_COMMAND):
             newCommand = IOCPMessageAction.KeepAlive
 
-        case let command where command.hasPrefix(IOCP_HEADER + IOCP_COMMAND_SEPARATOR + IOCP_EXIT_COMMAND):
+        case let command where command.hasPrefix(IOCP_IDENTIFIER + IOCP_EXIT_COMMAND):
             newCommand = IOCPMessageAction.Exit
 
         default:
@@ -93,21 +93,21 @@ extension IOCPMessageAction: CustomStringConvertible {
         switch self {
         case .Registration(let positions):
             let stringList = positions.map({ String($0) }).reduce("") { (buffer, next) -> String in
-                return buffer + next + IOCP_CONTENT_SEPARATOR
+                return buffer + next + IOCP_ARGUMENT_SEPARATOR
             }
-            return IOCP_HEADER + IOCP_COMMAND_SEPARATOR + IOCP_REGISTRATION_COMMAND + IOCP_CONTENT_SEPARATOR + stringList
+            return IOCP_IDENTIFIER + IOCP_REGISTRATION_COMMAND + IOCP_ARGUMENT_SEPARATOR + stringList
 
         case .Update(let positions):
             let stringList = positions.map({ String(describing: $0) }).reduce("") { (buffer, next) -> String in
-                return buffer + next + IOCP_CONTENT_SEPARATOR
+                return buffer + next + IOCP_ARGUMENT_SEPARATOR
             }
-            return IOCP_HEADER + IOCP_COMMAND_SEPARATOR + IOCP_UPDATE_COMMAND + IOCP_CONTENT_SEPARATOR + stringList
+            return IOCP_IDENTIFIER + IOCP_UPDATE_COMMAND + IOCP_ARGUMENT_SEPARATOR + stringList
 
         case .KeepAlive:
-            return IOCP_HEADER + IOCP_COMMAND_SEPARATOR + IOCP_KEEPALIVE_COMMAND + IOCP_CONTENT_SEPARATOR
+            return IOCP_IDENTIFIER + IOCP_KEEPALIVE_COMMAND + IOCP_ARGUMENT_SEPARATOR
 
         case .Exit:
-            return IOCP_HEADER + IOCP_COMMAND_SEPARATOR + IOCP_EXIT_COMMAND + IOCP_CONTENT_SEPARATOR
+            return IOCP_IDENTIFIER + IOCP_EXIT_COMMAND + IOCP_ARGUMENT_SEPARATOR
 
         case .Invalid:
             return "INVALID ACTION"
