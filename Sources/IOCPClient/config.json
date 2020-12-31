@@ -1,0 +1,12 @@
+{
+  "endPoints": [
+    {
+      "port": "/dev/cu.usbmodem14201",
+      "label": "Arduino Uno"
+    }
+  ],
+  "server": {
+    "host": "10.10.1.136",
+    "port": 8092
+  }
+}
