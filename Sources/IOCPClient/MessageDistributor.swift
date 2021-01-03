@@ -68,22 +68,41 @@ class MessageDistributor {
 
     private func forwardActionToSIOC(_ action: IOCPMessageAction) {
         if let sioc = self.siocEndpoint {
-            sioc.sendToServer(data: String(describing: action))
-            NSLog("To SIOC: \(action)")
+            sioc.sendToServer(data: String(describing: action)).whenComplete { (result) in
+                switch result {
+                case .success():
+                    NSLog("To SIOC: \(action)")
+                case .failure(let error):
+                    NSLog("Error To SIOC: \(action) \(error)")
+                }
+            }
         }
     }
 
     private func fowardActionToAllSerialEndpoints(_ action: IOCPMessageAction) {
         self.serialEndpoints.forEach { (endPoint) in
-            endPoint.handleIncomingAction(action)
+            endPoint.handleIncomingAction(action)?.whenComplete({ (result) in
+                switch result {
+                case .success():
+                    NSLog("To Serial: \(action)")
+                case .failure(let error):
+                    NSLog("Error To Serial: \(action) \(error)")
+                }
+            })
+
         }
-        NSLog("To all Serials: \(action)")
     }
 
     private func fowardActionToSerialEndpoints(_ action: IOCPMessageAction, except: [SerialEndpoint]) {
         self.serialEndpoints.subtracting(except).forEach { (endPoint) in
-            endPoint.handleIncomingAction(action)
-            NSLog("To Serial (\(endPoint.connectionLabel): \(action)")
+            endPoint.handleIncomingAction(action)?.whenComplete({ (result) in
+                switch result {
+                case .success():
+                    NSLog("To Serial: \(action)")
+                case .failure(let error):
+                    NSLog("Error To Serial: \(action) \(error)")
+                }
+            })
         }
     }
 

@@ -9,7 +9,7 @@ import Foundation
 import NIO
 
 
-public enum PortError: Int32, Error {
+public enum SerialError: Int32, Error {
     case failedToOpen = -1 // refer to open()
     case invalidPath
     case mustReceiveOrTransmit
@@ -17,6 +17,8 @@ public enum PortError: Int32, Error {
     case stringsMustBeUTF8
     case unableToConvertByteToCharacter
     case deviceNotConnected
+    case ChannelNotWritable
+    case ChannelNotAvailable
 }
 
 
@@ -50,11 +52,11 @@ class SerialEndpoint: ChannelInboundHandler {
 
     public func openPort(toReceive receive: Bool, andTransmit transmit: Bool) throws {
         guard !path.isEmpty else {
-            throw PortError.invalidPath
+            throw SerialError.invalidPath
         }
 
         guard receive || transmit else {
-            throw PortError.mustReceiveOrTransmit
+            throw SerialError.mustReceiveOrTransmit
         }
 
         var readWriteParam : Int32
@@ -76,8 +78,8 @@ class SerialEndpoint: ChannelInboundHandler {
     #endif
 
         // Throw error if open() failed
-        if fileDescriptor == PortError.failedToOpen.rawValue {
-            throw PortError.failedToOpen
+        if fileDescriptor == SerialError.failedToOpen.rawValue {
+            throw SerialError.failedToOpen
         }
 
         do {
@@ -215,21 +217,23 @@ class SerialEndpoint: ChannelInboundHandler {
         //NSLog("\(command)")
     }
 
-    internal func handleIncomingAction(_ action: IOCPMessageAction) {
+    @discardableResult
+    public func handleIncomingAction(_ action: IOCPMessageAction) -> EventLoopFuture<Void>? {
 
         switch action {
-        case .Registration(_):
-            break
 
         case .Update(let updatedPositions):
             let validPositions = updatedPositions.filter({ return self.registeredPositionNames.contains($0.name) })
             if validPositions.count > 0 {
                 let cleanAction = IOCPMessageAction.Update(validPositions)
-                self.forwardActionToDevice(cleanAction)
+                return self.forwardActionToDevice(cleanAction)
             }
 
-        case .KeepAlive:
+        case .Registration(_):
             break
+
+        case .KeepAlive:
+            return forwardActionToDevice(action)
 
         case .Exit:
             break
@@ -240,18 +244,23 @@ class SerialEndpoint: ChannelInboundHandler {
         case .Unknown:
             break
         }
+
+        return nil
     }
 
-    internal func forwardActionToDevice(_ action: IOCPMessageAction) {
+    @discardableResult
+    internal func forwardActionToDevice(_ action: IOCPMessageAction) -> EventLoopFuture<Void> {
 
         guard let channel = self.channel else {
-            return
+            return group.next().makeFailedFuture(SerialError.ChannelNotAvailable)
         }
 
         if channel.isWritable {
             let buffer = channel.allocator.buffer(string: String(describing: action) + "\r\n")
-            let _ = channel.writeAndFlush(buffer)
+            return channel.writeAndFlush(buffer)
         }
+
+        return group.next().makeFailedFuture(SerialError.ChannelNotWritable)
     }
 
     public func channelActive(context: ChannelHandlerContext) {
@@ -282,7 +291,7 @@ class SerialEndpoint: ChannelInboundHandler {
     }
 
     @objc func TCPconnected() {
-        self.forwardActionToDevice(IOCPMessageAction.KeepAlive)
+        self.handleIncomingAction(IOCPMessageAction.KeepAlive)
     }
     
 }
