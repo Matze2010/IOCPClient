@@ -80,3 +80,7 @@ extension TCPClient: Equatable {
         return (lhs.host == rhs.host) && (lhs.port == rhs.port)
     }
 }
+
+extension Notification.Name {
+    static let TCPClientDidConnectToServer = Notification.Name(rawValue: "TCPClientDidConnectToServer")
+}

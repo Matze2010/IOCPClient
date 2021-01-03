@@ -40,6 +40,8 @@ class SerialEndpoint: ChannelInboundHandler {
     public init(path: String, label: String) {
         self.path = path
         self.connectionLabel = label
+
+        NotificationCenter.default.addObserver(self, selector: #selector(TCPconnected), name: .TCPClientDidConnectToServer, object: nil)
     }
 
     public func openPort() throws {
@@ -254,9 +256,7 @@ class SerialEndpoint: ChannelInboundHandler {
 
     public func channelActive(context: ChannelHandlerContext) {
         print("Client connected to \(context) (\(self.connectionLabel))")
-
-        let buffer = context.channel.allocator.buffer(string: "Arn.Vivo:\r\n")
-        context.writeAndFlush(self.wrapOutboundOut(buffer), promise: nil)
+        self.forwardActionToDevice(IOCPMessageAction.KeepAlive)
     }
 
     public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
@@ -279,6 +279,10 @@ class SerialEndpoint: ChannelInboundHandler {
         // As we are not really interested getting notified on success or failure we just pass nil as promise to
         // reduce allocations.
         context.close(promise: nil)
+    }
+
+    @objc func TCPconnected() {
+        self.forwardActionToDevice(IOCPMessageAction.KeepAlive)
     }
     
 }

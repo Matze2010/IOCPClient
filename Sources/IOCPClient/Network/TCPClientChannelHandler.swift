@@ -17,7 +17,7 @@ public final class TCPClientChannelHandler: ChannelDuplexHandler {
     private var numBytes = 0
 
     public func channelActive(context: ChannelHandlerContext) {
-        print("Client connected to \(context.remoteAddress!)")
+        NotificationCenter.default.post(name: .TCPClientDidConnectToServer, object: nil)
 
         /// With SIOC-Server it needs an empty line after connecting
         let buffer = context.channel.allocator.buffer(string: "\r\n")
