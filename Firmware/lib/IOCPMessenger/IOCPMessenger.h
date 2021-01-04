@@ -102,6 +102,18 @@ public:
             comms->print(arg);
         }
     }
+
+    template <class T, class U>
+    void sendCmdValue(T pos, U value)
+    {
+        if (startCommand)
+        {
+            comms->print(field_separators[0]);
+            comms->print(pos);
+            comms->print('=');
+            comms->print(value);
+        }
+    }
 };
 
 #endif 
